@@ -12,16 +12,9 @@
     </ProjectList>
 </template>
   
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
 import ProjectList from '../../components/ProjectList/ProjectList.vue';
 
-export default defineComponent({
-    name: 'ListProjectsView',
-    components: {
-        ProjectList,
-    },
-});
 </script>
 
 <style scoped>

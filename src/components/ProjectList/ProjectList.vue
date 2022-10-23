@@ -43,8 +43,9 @@
     </Box>
 </template>
 
-<script lang="ts">
-import { defineComponent, computed } from 'vue';
+<script setup lang="ts">
+import type { ComputedRef } from 'vue';
+import { computed } from 'vue';
 import Box from '../../components/Box/Box.vue';
 import { useStore } from '@/store';
 import StoreActions from '@/store/StoreActions';
@@ -53,65 +54,57 @@ import { AxiosResponse } from 'axios';
 import { INewNotification, NotificationType } from '@/interfaces/Notifications';
 import useNotifier from '@/hooks/notifier';
 import StoreMutations from '@/store/StoreMutations';
+import IProject from '@/interfaces/Project/IProject';
 
-export default defineComponent({
-    name: 'ProjectsList',
-    components: {
-        Box,
-    },
-    computed: {
-        isEmptyList() : boolean {
-            return this.projects.length === 0;
-        },
-    },
-    methods: {
-        async remove(id: number) {
-            const payload: IProjectId = { id };
-            
-            const response: AxiosResponse = await this.store.dispatch(
-                StoreActions.DELETE_PROJECT,
-                payload
-            ).catch((error) => {
-                const newNotification: INewNotification = {
-                    title: 'Erro na exclusão',
-                    content: `Ocorreu um erro ao tentar excluir o projeto: ${error}`,
-                    type: NotificationType.ERROR,
-                };
-    
-                this.notifier.notify(newNotification);
-            });
+const store = useStore();
+const notifier = useNotifier();
 
-            if (response.status === 200) {
-                this.store.commit(
-                    StoreMutations.DELETE_PROJECT,
-                    payload
-                );
+store.dispatch(StoreActions.GET_PROJECTS);
 
-                const newNotification: INewNotification = {
-                    title: 'Projeto removido',
-                    content: 'Seu projeto foi removido.',
-                    type: NotificationType.SUCCESS,
-                };
-    
-                this.notifier.notify(newNotification);
-            }
-        },
-    },
-    setup() {
-        const store = useStore();
-        const notifier = useNotifier();
+const projects: ComputedRef<IProject[]> = computed(() => (
+    store.state.project.list
+));
 
-        store.dispatch(StoreActions.GET_PROJECTS);
-
-        return {
-            store,
-            notifier,
-            projects: computed(() => (
-                store.state.project.list
-            )),
-        };
-    }
+const isEmptyList: ComputedRef<boolean> = computed(() => {
+    return store.state.project.list.length === 0;
 });
+
+const remove = async (id: number) : Promise<void> => {
+    if (!confirm('Tem certeza que deseja remover esse projeto?')) {
+        return;
+    }
+
+    const payload: IProjectId = { id };
+    
+    const response: AxiosResponse = await store.dispatch(
+        StoreActions.DELETE_PROJECT,
+        payload
+    ).catch((error) => {
+        const newNotification: INewNotification = {
+            title: 'Erro na exclusão',
+            content: `Ocorreu um erro ao tentar excluir o projeto: ${error}`,
+            type: NotificationType.ERROR,
+        };
+
+        notifier.notify(newNotification);
+    });
+
+    if (response.status === 200) {
+        store.commit(
+            StoreMutations.DELETE_PROJECT,
+            payload
+        );
+
+        const newNotification: INewNotification = {
+            title: 'Projeto removido',
+            content: 'Seu projeto foi removido.',
+            type: NotificationType.SUCCESS,
+        };
+
+        notifier.notify(newNotification);
+    }
+};
+
 </script>
 
 <style scoped>

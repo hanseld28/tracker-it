@@ -1,45 +1,40 @@
 <template>
     <Button
         @click="click"
-        :disabled="disabled"
+        :disabled="props.disabled"
     >
-    <span class="icon">
-        <i :class="icon"></i>
-    </span>
-    <span>       
-        <slot></slot>
-    </span>
-    </button>
+        <span class="icon">
+            <i :class="props.icon"></i>
+        </span>
+        <span>       
+            <slot></slot>
+        </span>
+    </Button>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { defineEmits, defineProps } from 'vue';
 import Button from './Button.vue';
 
-export default defineComponent({
-    name: "IconButton",
-    emits: [
-        "click",
-    ],
-    props: {
-        icon: {
-            type: String,
-            default: "",
-        },
-        disabled: {
-            type: Boolean,
-            default: false,
-        },
+const emit = defineEmits([
+    'click',
+]);
+
+const props = defineProps({
+    icon: {
+        type: String,
+        default: "",
     },
-    methods: {
-        click(...args: []) : void {
-            this.$emit("click", ...args);
-        },
+    disabled: {
+        type: Boolean,
+        default: false,
     },
-    components: {
-        Button,
-    }
 });
+
+const click = (...args: []) : void => {
+    emit('click', ...args);
+};
+
 </script>
 
 <style>

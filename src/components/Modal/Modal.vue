@@ -1,7 +1,8 @@
 <template>
     <div
         class="modal"
-        :class="{ 'is-active': open }"
+        :class="{ 'is-active': props.open }"
+        @keyup="handleKeyUp"
     >
         <div class="modal-background"></div>
         <div class="modal-card">
@@ -25,24 +26,31 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { defineEmits, defineProps } from 'vue';
 
-export default defineComponent({
-    name: 'Modal',
-    emits: ['onClose'],
-    props: {
-        open: {
-            type: Boolean,
-            default: false,
-        },
+const emit = defineEmits([
+    'onClose',
+]);
+
+const props = defineProps({
+    open: {
+        type: Boolean,
+        default: false,
     },
-    methods: {
-        handleClose() : void {
-            this.$emit('onClose');
-        },
-    },
-})
+});
+
+const handleClose = () : void => {
+    emit('onClose');
+};
+
+const handleKeyUp = (e: KeyboardEvent) : void => {
+    if (e.key === 'Escape') {
+        handleClose();
+        return;
+    }
+};
+
 </script>
 
 <style>

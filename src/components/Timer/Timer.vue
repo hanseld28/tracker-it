@@ -20,77 +20,72 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import type { Ref, ComputedRef } from 'vue';
+import { defineEmits, defineProps, ref, computed } from 'vue';
 import Stopwatch from '../Stopwatch/Stopwatch.vue';
 import { TimerStatus } from '../../interfaces/Timer/types';
 import type { TimerStopPayload } from '../../interfaces/Timer/types';
 import IconButton from '../Button/IconButton.vue';
 
-export default defineComponent({
-    name: 'Timer',
-    emits: [
-        'onStart',
-        'onStop',
-    ],
-    components: {
-        Stopwatch,
-        IconButton,
-    },
-    props: {
-        disabled: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            timeInSeconds: 0,
-            timerId: 0,
-            status: TimerStatus.IDLE,
-        };
-    },
-    computed: {
-      isIdle() : boolean {
-        return this.status === TimerStatus.IDLE;
-      },  
-      isRunning() : boolean {
-        return this.status === TimerStatus.RUNNING;
-      },
-      disabledPlay() : boolean {
-        return this.disabled || this.isRunning;
-      },
-      disabledStop() : boolean {
-        return this.disabled || this.isIdle;
-      },
-    },
-    methods: {
-        play() {
-            this.timerId = setInterval(() => {
-                this.timeInSeconds += 1;
-            }, 1000);
-            this.status = TimerStatus.RUNNING;
+const emit = defineEmits([
+    'onStart',
+    'onStop',
+]);
 
-            const payload = {
-                status: this.status,
-            };
-
-            this.$emit('onStart', payload);
-        },
-        stop() {
-            clearInterval(this.timerId);
-
-            const payload: TimerStopPayload = {
-                timeInSeconds: this.timeInSeconds,
-            };
-            
-            this.$emit('onStop', payload);
-
-            this.timeInSeconds = 0;
-            this.status = TimerStatus.IDLE;
-        }
+const props = defineProps({
+    disabled: {
+        type: Boolean,
+        default: false,
     },
 });
+
+const timeInSeconds: Ref<number> = ref(0);
+const timerId: Ref<number> = ref(0);
+const status: Ref<TimerStatus> = ref(TimerStatus.IDLE);
+
+const isIdle: ComputedRef<boolean> = computed(() : boolean => {
+    return status.value === TimerStatus.IDLE;
+});
+
+const isRunning: ComputedRef<boolean> = computed(() : boolean => {
+    return status.value === TimerStatus.RUNNING;
+});
+
+const disabledPlay: ComputedRef<boolean> = computed(() : boolean => {
+    return props.disabled || isRunning.value;
+});
+
+const disabledStop: ComputedRef<boolean> = computed(() : boolean => {
+    return props.disabled || isIdle.value;
+});
+
+const play = () : void => {
+    timerId.value = setInterval(() => {
+        timeInSeconds.value += 1;
+    }, 1000);
+
+    status.value = TimerStatus.RUNNING;
+
+    const payload = {
+        status: status.value,
+    };
+
+    emit('onStart', payload);
+};
+
+const stop = () : void => {
+    clearInterval(timerId.value);
+
+    const payload: TimerStopPayload = {
+        timeInSeconds: timeInSeconds.value,
+    };
+    
+    emit('onStop', payload);
+
+    timeInSeconds.value = 0;
+    status.value = TimerStatus.IDLE;
+};
 
 </script>
 

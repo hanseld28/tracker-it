@@ -42,94 +42,83 @@
     </div>
 </template>
 
-<script lang="ts">
-import INewTask from '@/interfaces/Task/INewTask';
-import { defineComponent, computed } from 'vue';
-import Timer from '@/components/Timer/Timer.vue';
+<script setup lang="ts">
+import type { ComputedRef } from 'vue';
 import type { TimerStopPayload } from '@/interfaces/Timer/types';
+import { defineEmits, ref, computed } from 'vue';
 import { useStore } from '@/store';
+import INewTask from '@/interfaces/Task/INewTask';
+import Timer from '@/components/Timer/Timer.vue';
 import IProject from '@/interfaces/Project/IProject';
 import StoreActions from '@/store/StoreActions';
 
-export default defineComponent({
-    name: 'TaskForm',
-    emits: [
-        'onSave',
-        'onValidationError'
-    ],
-    components: {
-        Timer,
+const emit = defineEmits([
+    'onSave',
+    'onValidationError',
+]);
+
+const store = useStore();
+
+store.dispatch(StoreActions.GET_PROJECTS);
+
+const fields = ref({
+    description: {
+        value: '',
+        disabled: false,
     },
-    data() {
-        return {
-            fields: {
-                description: {
-                    value: '',
-                    disabled: false,
-                },
-                projectId: {
-                    value: null,
-                    disabled: false,
-                },
-            },
-        };
+    projectId: {
+        value: null,
+        disabled: false,
     },
-    computed: {
-        incompleteFields() : boolean {
-            return [
-                this.fields.description.value,
-            ].some((field) => (
-                field.length === 0
-            )) || !this.fields.projectId;
-        },
-    },
-    methods: {
-        handleTimerStart() : void {
-            this.fields.description.disabled = true;
-            this.fields.projectId.disabled = true;
-        },
-        finishTask(payload: TimerStopPayload) : void {
-            const selectedProject: IProject | undefined = this.projects.find((currentProject) => (
-                currentProject?.id === this.fields.projectId.value
-            ));
-
-            if (selectedProject === undefined) {
-                this.$emit('onValidationError', {
-                    error: true,
-                    fields: {
-                        projectId: 'o projeto é obrigatório para uma tarefa',
-                    },
-                })
-                return;
-            }
-
-            const task: INewTask = {
-                description: this.fields.description.value,
-                timeInSeconds: payload.timeInSeconds,
-                project: selectedProject, 
-            };
-
-            this.$emit('onSave', task);
-
-            this.fields.description.value = '';
-            this.fields.description.disabled = false;
-            this.fields.projectId.value = null,
-            this.fields.projectId.disabled = false;
-        },
-    },
-    setup() {
-        const store = useStore();
-
-        store.dispatch(StoreActions.GET_PROJECTS);
-
-        return {
-            store,
-            projects: computed(() => (
-                store.state.project.list
-            )),
-        }
-    }
 });
+
+const projects: ComputedRef<IProject[]> = computed(() => (
+    store.state.project.list
+));
+
+const incompleteFields: ComputedRef<boolean> = computed(() => {
+    return [
+        fields.value.description.value,
+    ].some((field) => (
+        field.length === 0
+    )) || !fields.value.projectId;
+});
+
+const handleTimerStart = () : void => {
+    fields.value.description.disabled = true;
+    fields.value.projectId.disabled = true;
+};
+
+const finishTask = (payload: TimerStopPayload) : void => {
+    const selectedProject: IProject | undefined = projects.value
+        .find((currentProject: IProject) => (
+            currentProject?.id === fields.value.projectId.value
+        ));
+
+    if (selectedProject === undefined) {
+        emit('onValidationError', {
+            error: true,
+            fields: {
+                projectId: 'o projeto é obrigatório para uma tarefa',
+            },
+        })
+        return;
+    }
+
+    const task: INewTask = {
+        description: fields.value.description.value,
+        timeInSeconds: payload.timeInSeconds,
+        project: selectedProject, 
+    };
+
+    emit('onSave', task);
+
+    fields.value.description.value = '';
+    fields.value.description.disabled = false;
+    fields.value.projectId.value = null,
+    fields.value.projectId.disabled = false;
+};
+
 </script>
 
 <style>

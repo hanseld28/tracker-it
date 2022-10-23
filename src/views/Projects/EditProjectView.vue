@@ -20,94 +20,79 @@
     </Box>
 </template>
   
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import type { Ref } from 'vue';
+import { defineProps, ref, onMounted } from 'vue';
+import { Router, useRouter } from 'vue-router';
+import { AxiosResponse } from 'axios';
+import { useStore } from '@/store';
+import { FormMode } from '@/interfaces/Form/index';
+import { INewNotification, NotificationType } from '@/interfaces/Notifications';
 import ProjectForm from '../../components/ProjectForm/ProjectForm.vue';
 import IProject from '../../interfaces/Project/IProject';
 import Box from '../../components/Box/Box.vue';
-import { useStore } from '@/store';
-import { FormMode } from '@/interfaces/Form/index';
 import StoreActions from '@/store/StoreActions';
-import { AxiosResponse } from 'axios';
-import { INewNotification, NotificationType } from '@/interfaces/Notifications';
-import useNotifier from '@/hooks/notifier';
 import config from '@/config';
+import useNotifier from '@/hooks/notifier';
 import StoreMutations from '@/store/StoreMutations';
 
-export default defineComponent({
-    name: 'EditProjectView',
-    components: {
-        Box,
-        ProjectForm,
-    },
-    props: {
-        id: {
-            type: String,
-        },
-    },
-    data() {
-        return {
-            mode: FormMode.CONSULT,
-            project: {} as IProject,
-        }
-    },
-    methods: {
-        async save(project: IProject) {
-            const response: AxiosResponse = await this.store.dispatch(
-                StoreActions.UPDATE_PROJECT,
-                project
-            ).catch(() => {
-                const newNotification: INewNotification = {
-                    title: 'Erro na alteração',
-                    content: 'Ocorreu um erro ao tentar alterar o projeto.',
-                    type: NotificationType.ERROR,
-                };
-    
-                this.notifier.notify(newNotification);
-            });
+const store = useStore();
+const notifier = useNotifier();
+const router: Router = useRouter();
 
-            if (response.status === 200) {
-                this.store.commit(
-                    StoreMutations.UPDATE_PROJECT,
-                    response.data
-                );
+const props = defineProps([
+    'id'
+]);
 
-                this.$router.replace(`/${config.PROJECTS_API_ENDPOINT}/${project.id}/edit`);
-            }
+const mode: Ref<FormMode> = ref(FormMode.CONSULT);
+const project: Ref<IProject> = ref({} as IProject);
 
-        },
-    },
-    mounted() {
-        const foundProject = this.store.state.project.list.find((current) => (
-            current.id === Number(this.id)
-        ));
-
-        if (foundProject === undefined) {
-            const notification: INewNotification = {
-                title: 'Erro',
-                content: 'Projeto não encontrado',
-                type: NotificationType.ERROR
-            };
-    
-            this.notifier.notify(notification);
-    
-            this.$router.replace(`/${config.PROJECTS_API_ENDPOINT}`);
-
-            return;
-        }
-        
-        this.project = foundProject;
-    },
-    setup() {
-        const store = useStore();
-        const notifier = useNotifier();
-
-        return {
-            store,
-            notifier,
+const save = async (project: IProject) : Promise<void> => {
+    const response: AxiosResponse = await store.dispatch(
+        StoreActions.UPDATE_PROJECT,
+        project
+    ).catch(() => {
+        const newNotification: INewNotification = {
+            title: 'Erro na alteração',
+            content: 'Ocorreu um erro ao tentar alterar o projeto.',
+            type: NotificationType.ERROR,
         };
+
+        notifier.notify(newNotification);
+    });
+
+    if (response.status === 200) {
+        store.commit(
+            StoreMutations.UPDATE_PROJECT,
+            response.data
+        );
+
+        router.replace(`/${config.PROJECTS_API_ENDPOINT}/${project.id}/edit`);
     }
+};
+
+onMounted(() => {
+    const foundProject = store.state.project.list.find((current) => (
+        current.id === Number(props.id)
+    ));
+
+    if (foundProject === undefined) {
+        const notification: INewNotification = {
+            title: 'Erro',
+            content: 'Projeto não encontrado',
+            type: NotificationType.ERROR
+        };
+
+        notifier.notify(notification);
+
+        router.replace(`/${config.PROJECTS_API_ENDPOINT}`);
+
+        return;
+    }
+    
+    project.value = foundProject;
 });
+
 </script>
 
 <style scoped>

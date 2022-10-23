@@ -1,7 +1,20 @@
 <template>
     <TaskForm @on-save="save" />
+    <div class="search-box">
+        <div class="control has-icons-right">
+            <input
+                class="input"
+                type="search"
+                placeholder="Pesquisar tarefas..."
+                v-model="search"
+            />
+            <span class="icon is-small is-right">
+                <i class="fas fa-search"></i>
+            </span>
+        </div>
+    </div>
     <div class="list" tabindex="-1">
-        <Box v-if="isEmptyList"> 
+        <Box v-if="isEmptyList" class="no-tasks"> 
             Nenhuma tarefa foi adicionada ainda. Você não está muito produtivo hoje :(
         </Box>
         <TransitionGroup name="task-list">
@@ -15,9 +28,11 @@
         </TransitionGroup>
     </div>
     <Modal
+        key="task-edit-modal"
+        id="task-edit-modal"
         :open="isSelectedTask"
         @on-close="closeEditModal"
-        v-if="selectedTask"
+        v-if="isSelectedTask"
     >
         <template v-slot:title>
             Editar Tarefa
@@ -29,6 +44,7 @@
                 <label class="label">Tarefa</label>
                 <div class="control">
                     <input
+                        id="task-name-input"
                         type="text"
                         class="input"
                         placeholder="Nome da tarefa"
@@ -80,138 +96,157 @@
     </Modal>
 </template>
   
-<script lang="ts">
-import { defineComponent, computed } from 'vue';
+<script setup lang="ts">
+import type { Ref, ComputedRef } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useStore } from '@/store';
+import { AxiosResponse } from 'axios';
+import { INewNotification, NotificationType } from '@/interfaces/Notifications';
 import TaskForm from '../../components/TaskForm/TaskForm.vue';
 import Task from '../../components/Task/Task.vue';
 import Box from '../../components/Box/Box.vue';
 import INewTask from '@/interfaces/Task/INewTask';
-import { useStore } from '@/store';
-import { notificationMixin } from '@/mixins/notify';
 import StoreActions from '@/store/StoreActions';
 import ITask from '@/interfaces/Task/ITask';
 import ITaskId from '@/interfaces/Task/ITaskId';
 import Modal from '@/components/Modal/Modal.vue';
 import Stopwatch from '@/components/Stopwatch/Stopwatch.vue';
-import { AxiosResponse } from 'axios';
-import { INewNotification, NotificationType } from '@/interfaces/Notifications';
 import StoreMutations from '@/store/StoreMutations';
 import useNotifier from '@/hooks/notifier';
+import IProject from '@/interfaces/Project/IProject';
 
-export default defineComponent({
-    name: 'TasksView',
-    components: {
-    TaskForm,
-    Task,
-    Box,
-    Modal,
-    Stopwatch,
-},
-    mixins: [
-        notificationMixin,
-    ],
-    data() {
-        return {
-            selectedTask: null as ITask | null,
-        };
-    },
-    computed: {
-        isEmptyList() : boolean {
-            return this.tasks.length === 0;
-        },
-        isSelectedTask() : boolean {
-            return this.selectedTask != null;
-        },
-        isIncompleteValuesOfSelectedTask() : boolean {
-            return this.selectedTask?.description.length === 0
-                || this.selectedTask?.project.id === null;
-        },
-        orderedTasks() : ITask[] {
-            return this.tasks
-                .slice(0)
-                .reverse();
-        }
-    },
-    methods: {
-        save(task: INewTask) {
-            this.store.dispatch(
-                StoreActions.SAVE_TASK,
-                task
-            );
-        },
-        edit(payload: ITaskId) {
-            const found: ITask | undefined = this.tasks.find((task) => (
-                task.id === payload.id
-            ));
+const store = useStore();
+const notifier = useNotifier();
 
-            this.selectedTask = {
-                ...Object.assign({}, found),
-                project: Object.assign({}, found?.project),
-            };
-        },
-        async update() {
-            const updatedTask = {
-                ...this.selectedTask,
-                project: this.projects.find((project) => (
-                    project.id === this.selectedTask?.project.id
-                )),
-            };
+store.dispatch(StoreActions.GET_TASKS);
 
-            const response: AxiosResponse = await this.store.dispatch(
-                StoreActions.UPDATE_TASK,
-                updatedTask
-            ).catch(() => {
-                const newNotification: INewNotification = {
-                    title: 'Erro na alteração',
-                    content: 'Ocorreu um erro ao tentar salvar as alterações da tarefa.',
-                    type: NotificationType.ERROR,
-                };
+const search: Ref<string> = ref('');
     
-                this.notifier.notify(newNotification);
-            });
+const selectedTask: Ref<ITask> = ref({} as ITask);
 
-            if (response.status === 200) {
-                this.store.commit(
-                    StoreMutations.UPDATE_TASK,
-                    response.data
-                );
-                
-                const newNotification: INewNotification = {
-                    title: 'Tarefa alterada',
-                    content: 'As alterações foram salvas.',
-                    type: NotificationType.SUCCESS,
-                };
-    
-                this.notifier.notify(newNotification);
+const tasks: ComputedRef<ITask[]> = computed(() => (
+    store.state.task.list.filter((task: ITask) => (
+        !search.value || task.description
+            .toLowerCase()
+            .includes(
+                search.value.toLowerCase()
+            )
+    ))
+));
 
-                this.closeEditModal();
-            }
-        },
-        closeEditModal() {
-            this.selectedTask = null;
-        }
-    },
-    setup() {
-        const store = useStore();
-        const notifier = useNotifier();
+const projects: ComputedRef<IProject[]> = computed(() => (
+    store.state.project.list
+));
 
-        store.dispatch(StoreActions.GET_TASKS);
-
-        return {
-            store,
-            notifier,
-            tasks: computed(() => (
-                store.state.task.list
-            )),
-            projects: computed(() => (
-                store.state.project.list
-            )),
-        };
-    }
+const isEmptyList: ComputedRef<boolean> = computed(() => {
+    return tasks.value.length === 0;
 });
+
+const isSelectedTask: ComputedRef<boolean> = computed(() => {
+    return selectedTask.value?.id !== null && selectedTask.value?.id !== undefined;
+});
+
+const isIncompleteValuesOfSelectedTask: ComputedRef<boolean> = computed(() => {
+    return selectedTask.value?.description.length === 0
+        || selectedTask.value?.project.id === null
+        || selectedTask.value?.project.id === undefined;
+});
+
+const orderedTasks: ComputedRef<ITask[]> = computed(() => {
+    return tasks.value
+        .slice(0)
+        .reverse();
+});
+
+const save = (task: INewTask) : void => {
+    store.dispatch(
+        StoreActions.SAVE_TASK,
+        task
+    );
+};
+
+const edit = (payload: ITaskId) : void => {
+    const found: ITask | undefined = tasks.value.find((task) => (
+        task.id === payload.id
+    ));
+
+    selectedTask.value = {
+        ...Object.assign({}, found),
+        project: Object.assign({}, found?.project),
+    };    
+};
+
+const update = async () : Promise<void> => {
+    const updatedTask = {
+        ...selectedTask.value,
+        project: projects.value.find((project) => (
+            project.id === selectedTask.value?.project.id
+        )),
+    };
+
+    const response: AxiosResponse = await store.dispatch(
+        StoreActions.UPDATE_TASK,
+        updatedTask
+    ).catch(() => {
+        const newNotification: INewNotification = {
+            title: 'Erro na alteração',
+            content: 'Ocorreu um erro ao tentar salvar as alterações da tarefa.',
+            type: NotificationType.ERROR,
+        };
+
+        notifier.notify(newNotification);
+    });
+
+    if (response.status === 200) {
+        store.commit(
+            StoreMutations.UPDATE_TASK,
+            response.data
+        );
+        
+        const newNotification: INewNotification = {
+            title: 'Tarefa alterada',
+            content: 'As alterações foram salvas.',
+            type: NotificationType.SUCCESS,
+        };
+
+        notifier.notify(newNotification);
+
+        closeEditModal();
+    }
+};
+
+const closeEditModal = () : void => {
+    selectedTask.value = {} as ITask;
+};
+
+watch(
+    isSelectedTask,
+    () => {
+        setTimeout(() => {
+            const taskNameInputElement: HTMLElement | null = document.getElementById(
+                'task-name-input'
+            );
+    
+            if (taskNameInputElement !== null) {
+                taskNameInputElement.focus();
+            }
+        }, 100);
+    }
+);
+
 </script>
 
 <style>
+.search-box {
+    padding-left: 36px;
+    padding-right: 40px;
+}
+
+.no-tasks {
+    margin-left: 1rem;
+    margin-right: 1.2rem;
+}
+
 .task-list-enter-active,
 .task-list-leave-active {
   transition: all 0.5s ease;

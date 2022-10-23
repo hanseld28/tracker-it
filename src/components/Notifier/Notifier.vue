@@ -11,36 +11,25 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, computed } from 'vue';
+<script setup lang="ts">
+import type { Ref, ComputedRef } from 'vue';
+import { ref, computed } from 'vue';
 import Alert from '../Alert/Alert.vue';
 import { useStore } from '@/store';
-import { NotificationType } from '@/interfaces/Notifications';
+import { INotification, NotificationType } from '@/interfaces/Notifications';
 
-export default defineComponent({
-    name: 'Notifier',
-    components: {
-        Alert,
-    },
-    data() {
-        return {
-            context: {
-                [NotificationType.SUCCESS]: 'is-success',
-                [NotificationType.WARNING]: 'is-warning',
-                [NotificationType.ERROR]: 'is-danger',
-            },
-        };
-    },
-    setup() {
-        const store = useStore();
+const store = useStore();
 
-        return {
-            notifications: computed(() => (
-                store.state.notification.list
-            )),
-        };
-    },
+const context: Ref<{ SUCCESS: string; WARNING: string; ERROR: string; }> = ref({
+    [NotificationType.SUCCESS]: 'is-success',
+    [NotificationType.WARNING]: 'is-warning',
+    [NotificationType.ERROR]: 'is-danger',
 });
+
+const notifications: ComputedRef<INotification[]> = computed(() => (
+    store.state.notification.list
+));
+
 </script>
 
 <style scoped>

@@ -5,7 +5,7 @@
         class="task-box-wrapper"
         @click="onClick"
         @dblclick="onEdit"
-        @keyup="onKeyUp"
+        @keyup="onKeyUp"    
     >
         <Box class="task-box">
             <div class="columns">
@@ -27,62 +27,62 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, PropType } from 'vue';
+<script setup lang="ts">
+import type { PropType } from 'vue';
+import { defineEmits, defineProps } from 'vue';
 import ITask from '@/interfaces/Task/ITask';
 import Box from '../Box/Box.vue';
 import Stopwatch from '../Stopwatch/Stopwatch.vue';
 import ITaskId from '@/interfaces/Task/ITaskId';
 
-export default defineComponent({
-    name: 'Task',
-    components: {
-        Stopwatch,
-        Box
-    },
-    emits: ['onEdit'],
-    props: {
-        task: {
-            type: Object as PropType<ITask>,
-            required: true,
-        },
-        tabindex: {
-            type: Number,
-        },
-    },
-    data() {
-        return {
-            colorReference: 0,
-        };
-    },
-    methods: {
-        onEdit() : void {
-            const payload: ITaskId = {
-                id: this.task.id,
-            };
+const emit = defineEmits([
+    'onEdit',
+]);
 
-            this.$emit('onEdit', payload);
-        },
-        onClick() : void {
-            const taskElement = document.getElementById(`task-${this.tabindex}`);
-            taskElement?.focus();
-        },
-        onKeyUp(e: KeyboardEvent) : void {
-            if (e.key === 'Enter') {
-                const taskElement = document.getElementById(`task-${this.tabindex}`);
-                taskElement?.blur();
-                this.onEdit();
-                return;
-            }
-        },
-        getTaskDescriptionLabel(task: ITask) : string {
-            return task.description || '(tarefa sem descrição)';
-        },
-        getTaskProjectNameLabel(task: ITask) : string {
-            return task.project?.name || '(N/D)';
-        },
+const props = defineProps({
+    task: {
+        type: Object as PropType<ITask>,
+        required: true,
     },
-})
+    tabindex: {
+        type: Number,
+    },
+});
+
+const onEdit = () : void => {
+    const payload: ITaskId = {
+        id: props.task.id,
+    };
+
+    emit('onEdit', payload);
+};
+
+const onClick = () : void => {
+    const taskElement = document.getElementById(`task-${props.tabindex}`);
+    taskElement?.focus();
+};
+
+const onKeyUp = (e: KeyboardEvent) : void => {
+    if (e.key === 'Enter') {
+        const taskElement: HTMLElement | null = document.getElementById(
+            `task-${props.tabindex}`
+        );
+        taskElement?.blur();
+
+        onEdit();
+        
+        return;
+    }
+};
+
+const getTaskDescriptionLabel = (task: ITask) : string => {
+    return task.description || '(tarefa sem descrição)';
+};
+
+const getTaskProjectNameLabel = (task: ITask) : string => {
+    return task.project?.name || '(N/D)';
+};
+
 </script>
 
 <style scoped>

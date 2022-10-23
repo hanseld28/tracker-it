@@ -1,10 +1,10 @@
 <template>
     <article
         class="message"
-        :class="severityClass"
+        :class="props.severityClass"
     >
         <div class="message-header">
-            {{ title }}            
+            {{ props.title }}            
         </div>
         <div class="message-body">
             <slot></slot>
@@ -12,20 +12,18 @@
     </article>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { defineProps } from 'vue';
 
-export default defineComponent({
-    name: 'Alert',
-    props: {
-        severityClass: {
-            type: String
-        },
-        title: {
-            type: String,
-        }
+const props = defineProps({
+    severityClass: {
+        type: String
+    },
+    title: {
+        type: String,
     },
 });
+
 </script>
 
 <style scoped>

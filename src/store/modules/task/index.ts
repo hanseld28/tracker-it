@@ -7,6 +7,7 @@ import ITask from '@/interfaces/Task/ITask';
 import ITaskId from '@/interfaces/Task/ITaskId';
 import StoreActions from '@/store/StoreActions';
 import StoreMutations from '@/store/StoreMutations';
+import { AxiosResponse } from 'axios';
 
 export interface ITaskState {
     list: ITask[]
@@ -21,15 +22,10 @@ export const task: Module<ITaskState, ITrackerItStore> = {
         [StoreMutations.LOAD_TASKS](state, payload: ITask[]) {
             state.list = payload;
         },
-        [StoreMutations.SAVE_TASK](state, payload: INewTask) {
-            const task: ITask = {
-                id: Date.now(),
-                ...payload,
-            };
-
+        [StoreMutations.SAVE_TASK](state, payload: ITask) {
             state.list = [
                 ...state.list,
-                task,
+                payload,
             ]
         },
         [StoreMutations.UPDATE_TASK](state, payload: ITask) {
@@ -61,7 +57,7 @@ export const task: Module<ITaskState, ITrackerItStore> = {
                     console.log('error', err)
                 });
         },
-        [StoreActions.SAVE_TASK](_, payload: INewTask) {
+        [StoreActions.SAVE_TASK]({ commit }, payload: INewTask) {
             const task: ITask = {
                 id: Date.now(),
                 ...payload,
@@ -75,6 +71,10 @@ export const task: Module<ITaskState, ITrackerItStore> = {
                         endpoint,
                         task
                     );
+                })
+                .then((response: AxiosResponse) => {
+                    const payload: ITask = response?.data;
+                    commit(StoreMutations.SAVE_TASK, payload);
                 });
         },
         [StoreActions.UPDATE_TASK](_, payload: ITask) {

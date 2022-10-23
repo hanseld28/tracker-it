@@ -20,73 +20,59 @@
     </Box>
 </template>
   
-<script lang="ts">
-import { defineComponent } from 'vue';
-import ProjectForm from '../../components/ProjectForm/ProjectForm.vue';
-import IProject from '../../interfaces/Project/IProject';
-import Box from '../../components/Box/Box.vue';
+<script setup lang="ts">
+import type { Ref } from 'vue';
+import { ref } from 'vue';
+import { Router, useRouter } from 'vue-router';
 import { useStore } from '@/store';
+import { AxiosError, AxiosResponse } from 'axios';
 import { FormMode } from '@/interfaces/Form';
 import { INewNotification, NotificationType } from '@/interfaces/Notifications';
 import useNotifier from '@/hooks/notifier';
-import StoreActions from '@/store/StoreActions';
-import { AxiosResponse } from 'axios';
 import StoreMutations from '@/store/StoreMutations';
+import StoreActions from '@/store/StoreActions';
+import ProjectForm from '../../components/ProjectForm/ProjectForm.vue';
+import IProject from '../../interfaces/Project/IProject';
+import Box from '../../components/Box/Box.vue';
 
-export default defineComponent({
-    name: 'NewProjectView',
-    components: {
-        Box,
-        ProjectForm,
-    },
-    data() {
-        return {
-            mode: FormMode.CREATE,
+const store = useStore();
+const notifier = useNotifier();
+const router: Router = useRouter();
+
+const mode: Ref<FormMode> = ref(FormMode.CREATE);
+
+const save = async (project: IProject) : Promise<void> => {
+    const response: AxiosResponse = await store.dispatch(
+        StoreActions.SAVE_PROJECT,
+        project
+    ).catch((error: AxiosError | Error) => {
+        const newNotification: INewNotification = {
+            title: 'Erro na criação',
+            content: `Ocorreu um erro ao tentar criar o projeto: ${error.message}`,
+            type: NotificationType.ERROR,
         };
-    },
-    methods: {
-        async save(project: IProject) {
-            const response: AxiosResponse = await this.store.dispatch(
-                StoreActions.SAVE_PROJECT,
-                project
-            ).catch((error) => {
-                const newNotification: INewNotification = {
-                    title: 'Erro na criação',
-                    content: `Ocorreu um erro ao tentar criar o projeto: ${error}`,
-                    type: NotificationType.ERROR,
-                };
-    
-                this.notifier.notify(newNotification);
-            });
 
-            if (response.status === 201) {
-                this.store.commit(
-                    StoreMutations.SAVE_PROJECT,
-                    response.data
-                );
+        notifier.notify(newNotification);
+    });
 
-                const newNotification: INewNotification = {
-                    title: 'Projeto criado',
-                    content: 'Seu novo projeto já está disponível.',
-                    type: NotificationType.SUCCESS,
-                };
-    
-                this.notifier.notify(newNotification);
-    
-                this.$router.replace('/projects');
-            }
-        },
-    },
-    setup() {
-        const store = useStore();
-        const notifier = useNotifier();
+    if (response.status === 201) {
+        store.commit(
+            StoreMutations.SAVE_PROJECT,
+            response.data
+        );
 
-        return {
-            store,
-            notifier,
+        const newNotification: INewNotification = {
+            title: 'Projeto criado',
+            content: 'Seu novo projeto já está disponível.',
+            type: NotificationType.SUCCESS,
         };
+
+        notifier.notify(newNotification);
+
+        router.replace('/projects');
     }
-});
+};
+
 </script>
 
 <style scoped>

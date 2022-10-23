@@ -35,13 +35,13 @@
                     <li>
                         <RouterLink to="/" class="link">
                             <i class="fas fa-tasks"></i>
-                            tarefas
+                            Tarefas
                         </RouterLink>
                     </li>
                     <li>
                         <RouterLink to="/projects" class="link">
                             <i class="fas fa-project-diagram"></i>
-                            projetos
+                            Projetos
                         </RouterLink>
                     </li>
                 </ul>
@@ -50,46 +50,44 @@
     </header>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import type { Ref, ComputedRef } from 'vue';
+import { defineEmits, ref, computed } from 'vue';
 import { ThemeMode } from '../../interfaces/Theme/types';
 
-export default defineComponent({
-    name: 'LateralBar',
-    emits: [
-        'onThemeChange',
-    ],
-    data() {
-        return {
-            activeMode: ThemeMode.LIGHT,
-        };
-    },
-    computed: {
-        isSystemModeActive() : boolean {
-            return this.activeMode === ThemeMode.SYSTEM;
-        },
-        isLightModeActive() : boolean {
-            return this.activeMode === ThemeMode.LIGHT;
-        },
-        isDarkModeActive() : boolean {
-            return this.activeMode === ThemeMode.DARK;
-        }, 
-    },
-    methods: {
-        changeThemeToLight() {
-            this.activeMode = ThemeMode.LIGHT;
-            this.$emit('onThemeChange', this.activeMode);
-        },
-        changeThemeToSystem() {
-            this.activeMode = ThemeMode.SYSTEM;
-            this.$emit('onThemeChange', this.activeMode);
-        },
-        changeThemeToDark() {
-            this.activeMode = ThemeMode.DARK;
-            this.$emit('onThemeChange', this.activeMode);
-        },
-    },
-})
+const emit = defineEmits([
+    'onThemeChange',
+]);
+
+const activeMode: Ref<ThemeMode> = ref(ThemeMode.LIGHT);
+
+const isSystemModeActive: ComputedRef<boolean> = computed(() => {
+    return activeMode.value === ThemeMode.SYSTEM;
+});
+
+const isLightModeActive: ComputedRef<boolean> = computed(() => {
+    return activeMode.value === ThemeMode.LIGHT;
+});
+
+const isDarkModeActive: ComputedRef<boolean> = computed(() => {
+    return activeMode.value === ThemeMode.DARK;
+});
+
+const changeThemeToLight = () : void => {
+    activeMode.value = ThemeMode.LIGHT;
+    emit('onThemeChange', activeMode.value);
+};
+
+const changeThemeToSystem = () : void => {
+    activeMode.value = ThemeMode.SYSTEM;
+    emit('onThemeChange', activeMode.value);
+};
+
+const changeThemeToDark = () : void => {
+    activeMode.value = ThemeMode.DARK;
+    emit('onThemeChange', activeMode.value);
+};
+
 </script>
 
 <style scoped>

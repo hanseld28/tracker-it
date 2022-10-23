@@ -1,5 +1,10 @@
 <template>
-  <main class="columns is-gapless is-multiline" :class="{ 'dark-mode': isDarkModeActive }">
+  <main
+    class="columns is-gapless is-multiline"
+    :class="{
+      'dark-mode': isDarkModeActive
+    }"
+  >
     <div class="column is-one-quarter">
       <LateralBar
         :themeMode="activeMode"
@@ -13,34 +18,23 @@
   </main>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import type { Ref, ComputedRef } from 'vue';
+import { ref, computed } from 'vue';
 import { ThemeMode } from './interfaces/Theme/types';
 import LateralBar from './components/LateralBar/LateralBar.vue';
 import Notifier from './components/Notifier/Notifier.vue';
 
-export default defineComponent({
-  name: 'App',
-  components: {
-    LateralBar,
-    Notifier,
-  },
-  data() {
-    return {
-      activeMode: ThemeMode.LIGHT,
-    };
-  },
-  computed: {
-    isDarkModeActive() : boolean {
-      return this.activeMode === ThemeMode.DARK;
-    },
-  },
-  methods: {
-    changeThemeMode(changedMode: ThemeMode) {
-      this.activeMode = changedMode;
-    },
-  },
+const activeMode: Ref<ThemeMode> = ref(ThemeMode.LIGHT);
+
+const isDarkModeActive: ComputedRef<boolean> = computed(() => {
+  return activeMode.value === ThemeMode.DARK;
 });
+
+const changeThemeMode = (changedMode: ThemeMode) => {
+  activeMode.value = changedMode;
+};
+
 </script>
 
 <style>

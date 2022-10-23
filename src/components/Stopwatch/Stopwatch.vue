@@ -9,29 +9,27 @@
     </section>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import type { ComputedRef } from 'vue';
+import { defineProps, computed } from 'vue';
 
-export default defineComponent({
-    name: 'Stopwatch',
-    props: {
-        timeInSeconds: {
-            type: Number,
-            default: 0
-        }
+const props = defineProps({
+    timeInSeconds: {
+        type: Number,
+        default: 0,
     },
-    computed: {
-        elapsedTime () : string {
-            const timeInMilliseconds = this.timeInSeconds * 1000;
-            const timeInDate = new Date(timeInMilliseconds);
-            const formattedTime = timeInDate
-                .toISOString()
-                .substring(11, 19);
-            
-            return formattedTime;
-        },
-    },
-})
+});
+
+const elapsedTime: ComputedRef<string> = computed(() => {
+    const timeInMilliseconds = props.timeInSeconds * 1000;
+    const timeInDate = new Date(timeInMilliseconds);
+    const formattedTime = timeInDate
+        .toISOString()
+        .substring(11, 19);
+    
+    return formattedTime;
+});
+
 </script>
 
 <style scoped>
