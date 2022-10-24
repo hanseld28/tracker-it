@@ -3,9 +3,11 @@ import App from './App.vue'
 
 import '@fortawesome/fontawesome-free/css/all.css';
 import router from './router';
-import { store, TRACKER_IT_STORE_INJECTION_KEY } from './store';
+import { createPinia } from 'pinia';
+
+const pinia = createPinia();
 
 createApp(App)
     .use(router)
-    .use(store, TRACKER_IT_STORE_INJECTION_KEY)
+    .use(pinia)
     .mount('#app');

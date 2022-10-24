@@ -45,21 +45,24 @@
 <script setup lang="ts">
 import type { ComputedRef } from 'vue';
 import type { TimerStopPayload } from '@/interfaces/Timer/types';
-import { defineEmits, ref, computed } from 'vue';
-import { useStore } from '@/store';
+import { defineEmits, ref, computed, onBeforeMount } from 'vue';
 import INewTask from '@/interfaces/Task/INewTask';
 import Timer from '@/components/Timer/Timer.vue';
 import IProject from '@/interfaces/Project/IProject';
-import StoreActions from '@/store/StoreActions';
+import { useProjectStore } from '@/stores/ProjectStore';
+import { storeToRefs } from 'pinia';
 
 const emit = defineEmits([
     'onSave',
     'onValidationError',
 ]);
 
-const store = useStore();
+const projectStore = useProjectStore();
+const { projects } = storeToRefs(projectStore);
 
-store.dispatch(StoreActions.GET_PROJECTS);
+onBeforeMount(() => {
+    projectStore.fetchAll();
+})
 
 const fields = ref({
     description: {
@@ -71,10 +74,6 @@ const fields = ref({
         disabled: false,
     },
 });
-
-const projects: ComputedRef<IProject[]> = computed(() => (
-    store.state.project.list
-));
 
 const incompleteFields: ComputedRef<boolean> = computed(() => {
     return [

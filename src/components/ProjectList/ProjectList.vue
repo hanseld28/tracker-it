@@ -45,28 +45,21 @@
 
 <script setup lang="ts">
 import type { ComputedRef } from 'vue';
-import { computed } from 'vue';
+import type IProjectId from '@/interfaces/Project/IProjectId';
+import { computed, onBeforeMount } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useProjectStore } from '@/stores/ProjectStore';
 import Box from '../../components/Box/Box.vue';
-import { useStore } from '@/store';
-import StoreActions from '@/store/StoreActions';
-import IProjectId from '@/interfaces/Project/IProjectId';
-import { AxiosResponse } from 'axios';
-import { INewNotification, NotificationType } from '@/interfaces/Notifications';
-import useNotifier from '@/hooks/notifier';
-import StoreMutations from '@/store/StoreMutations';
-import IProject from '@/interfaces/Project/IProject';
 
-const store = useStore();
-const notifier = useNotifier();
+const projectStore = useProjectStore();
+const { projects } = storeToRefs(projectStore);
 
-store.dispatch(StoreActions.GET_PROJECTS);
-
-const projects: ComputedRef<IProject[]> = computed(() => (
-    store.state.project.list
-));
+onBeforeMount(() => {
+    projectStore.fetchAll();
+});
 
 const isEmptyList: ComputedRef<boolean> = computed(() => {
-    return store.state.project.list.length === 0;
+    return projects.value.length === 0;
 });
 
 const remove = async (id: number) : Promise<void> => {
@@ -76,33 +69,7 @@ const remove = async (id: number) : Promise<void> => {
 
     const payload: IProjectId = { id };
     
-    const response: AxiosResponse = await store.dispatch(
-        StoreActions.DELETE_PROJECT,
-        payload
-    ).catch((error) => {
-        const newNotification: INewNotification = {
-            title: 'Erro na exclusão',
-            content: `Ocorreu um erro ao tentar excluir o projeto: ${error}`,
-            type: NotificationType.ERROR,
-        };
-
-        notifier.notify(newNotification);
-    });
-
-    if (response.status === 200) {
-        store.commit(
-            StoreMutations.DELETE_PROJECT,
-            payload
-        );
-
-        const newNotification: INewNotification = {
-            title: 'Projeto removido',
-            content: 'Seu projeto foi removido.',
-            type: NotificationType.SUCCESS,
-        };
-
-        notifier.notify(newNotification);
-    }
+    projectStore.remove(payload);
 };
 
 </script>
